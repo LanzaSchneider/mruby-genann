@@ -6,6 +6,8 @@ This is a mruby binding.(Genann has been bundled in.)
 -
 
 Usage:
+--
+
 ```Ruby
 # XOR TEST
 
@@ -37,8 +39,8 @@ print sprintf("Output for [%1.f, %1.f] is %1.f.\n", inputs[2][0], inputs[2][1], 
 print sprintf("Output for [%1.f, %1.f] is %1.f.\n", inputs[3][0], inputs[3][1], genann.run(inputs[3]))
 ```
 
-=================================================
 Serialization:
+--
 
 ```Ruby
 # XOR TEST
