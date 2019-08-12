@@ -1,10 +1,12 @@
 mruby-genann
 =================================================
 Genann is a light-weight ANN library.
+-
 This is a mruby binding.(Genann has been bundled in.)
-=================================================
-Usage:
+-
 
+Usage:
+```Ruby
 # XOR TEST
 
 # /* Creates and returns a new ann. */
@@ -33,10 +35,12 @@ print sprintf("Output for [%1.f, %1.f] is %1.f.\n", inputs[0][0], inputs[0][1], 
 print sprintf("Output for [%1.f, %1.f] is %1.f.\n", inputs[1][0], inputs[1][1], genann.run(inputs[1]))
 print sprintf("Output for [%1.f, %1.f] is %1.f.\n", inputs[2][0], inputs[2][1], genann.run(inputs[2]))
 print sprintf("Output for [%1.f, %1.f] is %1.f.\n", inputs[3][0], inputs[3][1], genann.run(inputs[3]))
+```
 
 =================================================
 Serialization:
 
+```Ruby
 # XOR TEST
 genann = Genann.new(2, 1, 2, 1)
 
@@ -66,4 +70,4 @@ print sprintf("Output for [%1.f, %1.f] is %1.f.\n", inputs[1][0], inputs[1][1], 
 print sprintf("Output for [%1.f, %1.f] is %1.f.\n", inputs[2][0], inputs[2][1], genann_2.run(inputs[2]))
 print sprintf("Output for [%1.f, %1.f] is %1.f.\n", inputs[3][0], inputs[3][1], genann_2.run(inputs[3]))
 
-
+```
