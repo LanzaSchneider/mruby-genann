@@ -71,16 +71,23 @@ static mrb_value mrb_genann_train(mrb_state* mrb, mrb_value self) {
 	mrb_value inputs, desired_outputs;
 	mrb_int desired_output_index;
 	mrb_float learning_rate;
-	if ( gnn &&
-	(4 == mrb_get_args(mrb, "ooif", &inputs, &desired_outputs, &desired_output_index, &learning_rate)) &&
-	(DATA_TYPE(inputs) == &mrb_genann_array_type) &&
-	DATA_PTR(inputs) &&
-	(DATA_TYPE(desired_outputs) == &mrb_genann_array_type) &&
-	DATA_PTR(desired_outputs)
-	) {
-		genann_train(gnn, (double const*)DATA_PTR(inputs), (double const*)(DATA_PTR(desired_outputs)) + desired_output_index, (double)learning_rate);
+	if ( gnn && (4 == mrb_get_args(mrb, "ooif", &inputs, &desired_outputs, &desired_output_index, &learning_rate))) {
+		if ((DATA_TYPE(inputs) == &mrb_genann_array_type) &&
+			DATA_PTR(inputs) &&
+			(DATA_TYPE(desired_outputs) == &mrb_genann_array_type) &&
+			DATA_PTR(desired_outputs)) {
+			genann_train(gnn, (double const*)DATA_PTR(inputs), (double const*)(DATA_PTR(desired_outputs)) + desired_output_index, (double)learning_rate);
+		} else if (mrb_array_p(inputs) && mrb_array_p(desired_outputs) && desired_output_index >= 0 && desired_output_index < RARRAY_LEN(desired_outputs) ) {
+			double desired_output = (double)mrb_to_flo(mrb, RARRAY_PTR(desired_outputs)[desired_output_index]);
+			double* inputs_array = (double*)malloc(sizeof(double) * RARRAY_LEN(inputs));
+			for (int i = 0; i < RARRAY_LEN(inputs); i++) {
+				inputs_array[i] = (double)mrb_to_flo(mrb, RARRAY_PTR(inputs)[i]);
+			}
+			genann_train(gnn, inputs_array, &desired_output, (double)learning_rate);
+			free(inputs_array);
+		}
 	} else {
-		mrb_raise(mrb, E_RUNTIME_ERROR, "Genann train failed(need args: inputs(Genann::Array), desired_outputs(Genann::Array), desired_output_index(fixnum), learning_rate(float)).");
+		mrb_raise(mrb, E_RUNTIME_ERROR, "Genann train failed(need args: inputs(Genann::Array), desired_outputs(Genann::Array), desired_output_index(fixnum), learning_rate(float)) | or inputs(Array), desired_outputs(Array), desired_output_index(fixnum), learning_rate(float).");
 	}
 	return mrb_nil_value();
 }
@@ -88,15 +95,78 @@ static mrb_value mrb_genann_train(mrb_state* mrb, mrb_value self) {
 static mrb_value mrb_genann_run(mrb_state* mrb, mrb_value self) {
 	genann* gnn = (genann*)DATA_PTR(self);
 	mrb_value inputs;
-	if ( gnn &&
-	mrb_get_args(mrb, "o", &inputs) &&
-	(DATA_TYPE(inputs) == &mrb_genann_array_type) &&
-	DATA_PTR(inputs)
-	) {
-		double out = *genann_run(gnn, (double const*)DATA_PTR(inputs));
+	if ( gnn && mrb_get_args(mrb, "o", &inputs) ) {
+		double out = -1;
+		if ((DATA_TYPE(inputs) == &mrb_genann_array_type) && DATA_PTR(inputs)) {
+			out = *genann_run(gnn, (double const*)DATA_PTR(inputs));
+		} else if (mrb_array_p(inputs)) {
+			double* inputs_array = (double*)malloc(sizeof(double) * RARRAY_LEN(inputs));
+			for (int i = 0; i < RARRAY_LEN(inputs); i++) {
+				inputs_array[i] = (double)mrb_to_flo(mrb, RARRAY_PTR(inputs)[i]);
+			}
+			out = *genann_run(gnn, inputs_array);
+			free(inputs_array);
+		}
 		return mrb_float_value(mrb, (mrb_float)out);
 	} else {
-		mrb_raise(mrb, E_RUNTIME_ERROR, "Genann run failed(need args: inputs(Genann::Array).");
+		mrb_raise(mrb, E_RUNTIME_ERROR, "Genann run failed(need args: inputs(Genann::Array) | or inputs(Array).");
+	}
+	return mrb_nil_value();
+}
+
+static mrb_value mrb_genann_train_multi(mrb_state* mrb, mrb_value self) {
+	genann* gnn = (genann*)DATA_PTR(self);
+	mrb_value inputs, desired_outputs;
+	mrb_float learning_rate;
+	if ( gnn && (3 == mrb_get_args(mrb, "oof", &inputs, &desired_outputs, &learning_rate))) {
+		if ((DATA_TYPE(inputs) == &mrb_genann_array_type) &&
+			DATA_PTR(inputs) &&
+			(DATA_TYPE(desired_outputs) == &mrb_genann_array_type) &&
+			DATA_PTR(desired_outputs)) {
+			genann_train(gnn, (double const*)DATA_PTR(inputs), (double const*)(DATA_PTR(desired_outputs)), (double)learning_rate);
+		} else if (mrb_array_p(inputs) && mrb_array_p(desired_outputs)) {
+			double* desired_outputs_array = (double*)malloc(sizeof(double) * RARRAY_LEN(desired_outputs));
+			for (int i = 0; i < RARRAY_LEN(desired_outputs); i++) {
+				desired_outputs_array[i] = (double)mrb_to_flo(mrb, RARRAY_PTR(desired_outputs)[i]);
+			}
+			double* inputs_array = (double*)malloc(sizeof(double) * RARRAY_LEN(inputs));
+			for (int i = 0; i < RARRAY_LEN(inputs); i++) {
+				inputs_array[i] = (double)mrb_to_flo(mrb, RARRAY_PTR(inputs)[i]);
+			}
+			genann_train(gnn, inputs_array, desired_outputs_array, (double)learning_rate);
+			free(inputs_array);
+			free(desired_outputs_array);
+		}
+	} else {
+		mrb_raise(mrb, E_RUNTIME_ERROR, "Genann train_multi failed(need args: inputs(Genann::Array), desired_outputs(Genann::Array), learning_rate(float)) | or inputs(Array), desired_outputs(Array), learning_rate(float).");
+	}
+	return mrb_nil_value();
+}
+
+static mrb_value mrb_genann_run_multi(mrb_state* mrb, mrb_value self) {
+	genann* gnn = (genann*)DATA_PTR(self);
+	mrb_value inputs;
+	if ( gnn && mrb_get_args(mrb, "o", &inputs) ) {
+		mrb_value result = mrb_ary_new(mrb);
+		if ((DATA_TYPE(inputs) == &mrb_genann_array_type) && DATA_PTR(inputs)) {
+			const double* out = genann_run(gnn, (double const*)DATA_PTR(inputs));
+			for (int i = 0; i < gnn->outputs; i++) {
+				mrb_ary_push(mrb, result, mrb_float_value(mrb, (mrb_float)out[i]));
+			}
+		} else if (mrb_array_p(inputs)) {
+			double* inputs_array = (double*)malloc(sizeof(double) * RARRAY_LEN(inputs));
+			for (int i = 0; i < RARRAY_LEN(inputs); i++) {
+				inputs_array[i] = (double)mrb_to_flo(mrb, RARRAY_PTR(inputs)[i]);
+			}
+			const double* out = genann_run(gnn, inputs_array);
+			for (int i = 0; i < gnn->outputs; i++) {
+				mrb_ary_push(mrb, result, mrb_float_value(mrb, (mrb_float)out[i]));
+			}
+			free(inputs_array);
+		}
+		return result;
+	} else {
+		mrb_raise(mrb, E_RUNTIME_ERROR, "Genann run_multi failed(need args: inputs(Genann::Array) | or inputs(Array).");
 	}
 	return mrb_nil_value();
 }
@@ -186,6 +256,8 @@ void mrb_lanlv_genann_gem_init(mrb_state* mrb) {
 	mrb_define_method(mrb, genann_class, "initialize", mrb_genann_initialize, MRB_ARGS_ANY());
 	mrb_define_method(mrb, genann_class, "train", mrb_genann_train, MRB_ARGS_REQ(4));
 	mrb_define_method(mrb, genann_class, "run", mrb_genann_run, MRB_ARGS_REQ(1));
+	mrb_define_method(mrb, genann_class, "train_multi", mrb_genann_train_multi, MRB_ARGS_REQ(3));
+	mrb_define_method(mrb, genann_class, "run_multi", mrb_genann_run_multi, MRB_ARGS_REQ(1));
 	mrb_define_method(mrb, genann_class, "dump", mrb_genann_dump, MRB_ARGS_NONE());
 	
 	struct RClass* genann_array_class = mrb_define_class_under(mrb, genann_class, "Array", mrb->object_class);
