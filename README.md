@@ -7,7 +7,7 @@ Genann is a light-weight ANN library
 This is a mruby binding.(Genann has been bundled in.)
 -
 
-Usage
+Usage(also can found in ```./test/genann.rb```)
 --
 
 ```Ruby
@@ -21,12 +21,15 @@ output_buf = output.collect {|arr| arr.pack('E*') }
 # 1 hidden layer of 2 neurons,
 # and 1 output.
 ann = Genann.new(2, 1, 2, 1)
+# randomize weights.
+srand
+ann.weights_load Array.new(ann.total_weights){ rand }.pack('E*')
 # Train on the four labeled data points many times.
 500.times do
- ann.train input_buf[0], output_buf[0], 1.0
- ann.train input_buf[1], output_buf[1], 1.0
- ann.train input_buf[2], output_buf[2], 1.0
- ann.train input_buf[3], output_buf[3], 1.0
+ ann.train input_buf[0], output_buf[0], 3
+ ann.train input_buf[1], output_buf[1], 3
+ ann.train input_buf[2], output_buf[2], 3
+ ann.train input_buf[3], output_buf[3], 3
 end
 # Run the network and see what it predicts.
 # Use String#unpack for result parsing.
