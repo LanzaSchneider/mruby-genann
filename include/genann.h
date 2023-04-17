@@ -28,7 +28,6 @@
 #define GENANN_H
 
 #include <stdio.h>
-#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +45,7 @@ typedef double (*genann_actfun)(const struct genann *ann, double a);
 
 typedef struct genann {
     /* How many inputs, outputs, and hidden neurons. */
-    int32_t inputs, hidden_layers, hidden, outputs;
+    int inputs, hidden_layers, hidden, outputs;
 
     /* Which activation function to use for hidden neurons. Default: gennann_act_sigmoid_cached*/
     genann_actfun activation_hidden;
@@ -55,10 +54,10 @@ typedef struct genann {
     genann_actfun activation_output;
 
     /* Total number of weights, and size of weights buffer. */
-    int32_t total_weights;
+    int total_weights;
 
     /* Total number of neurons + inputs and size of output buffer. */
-    int32_t total_neurons;
+    int total_neurons;
 
     /* All weights (total_weights long). */
     double *weight;
@@ -72,10 +71,10 @@ typedef struct genann {
 } genann;
 
 /* Creates and returns a new ann. */
-genann *genann_init(int32_t inputs, int32_t hidden_layers, int32_t hidden, int32_t outputs);
+genann *genann_init(int inputs, int hidden_layers, int hidden, int outputs);
 
 /* Creates ANN from file saved with genann_write. */
-// genann *genann_read(FILE *in);
+genann *genann_read(FILE *in);
 
 /* Sets weights randomly. Called by init. */
 void genann_randomize(genann *ann);
@@ -93,7 +92,7 @@ double const *genann_run(genann const *ann, double const *inputs);
 void genann_train(genann const *ann, double const *inputs, double const *desired_outputs, double learning_rate);
 
 /* Saves the ann. */
-// void genann_write(genann const *ann, FILE *out);
+void genann_write(genann const *ann, FILE *out);
 
 void genann_init_sigmoid_lookup(const genann *ann);
 double genann_act_sigmoid(const genann *ann, double a);
