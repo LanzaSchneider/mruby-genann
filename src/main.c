@@ -78,10 +78,11 @@ static mrb_value mrb_genann_train(mrb_state* mrb, mrb_value self) {
 			DATA_PTR(desired_outputs)) {
 			genann_train(gnn, (double const*)DATA_PTR(inputs), (double const*)(DATA_PTR(desired_outputs)) + desired_output_index, (double)learning_rate);
 		} else if (mrb_array_p(inputs) && mrb_array_p(desired_outputs) && desired_output_index >= 0 && desired_output_index < RARRAY_LEN(desired_outputs) ) {
-			double desired_output = (double)mrb_to_flo(mrb, RARRAY_PTR(desired_outputs)[desired_output_index]);
+			
+			double desired_output = (double)mrb_as_float(mrb, RARRAY_PTR(desired_outputs)[desired_output_index]);
 			double* inputs_array = (double*)malloc(sizeof(double) * RARRAY_LEN(inputs));
 			for (int i = 0; i < RARRAY_LEN(inputs); i++) {
-				inputs_array[i] = (double)mrb_to_flo(mrb, RARRAY_PTR(inputs)[i]);
+				inputs_array[i] = (double)mrb_as_float(mrb, RARRAY_PTR(inputs)[i]);
 			}
 			genann_train(gnn, inputs_array, &desired_output, (double)learning_rate);
 			free(inputs_array);
@@ -102,7 +103,7 @@ static mrb_value mrb_genann_run(mrb_state* mrb, mrb_value self) {
 		} else if (mrb_array_p(inputs)) {
 			double* inputs_array = (double*)malloc(sizeof(double) * RARRAY_LEN(inputs));
 			for (int i = 0; i < RARRAY_LEN(inputs); i++) {
-				inputs_array[i] = (double)mrb_to_flo(mrb, RARRAY_PTR(inputs)[i]);
+				inputs_array[i] = (double)mrb_as_float(mrb, RARRAY_PTR(inputs)[i]);
 			}
 			out = *genann_run(gnn, inputs_array);
 			free(inputs_array);
@@ -127,11 +128,11 @@ static mrb_value mrb_genann_train_multi(mrb_state* mrb, mrb_value self) {
 		} else if (mrb_array_p(inputs) && mrb_array_p(desired_outputs)) {
 			double* desired_outputs_array = (double*)malloc(sizeof(double) * RARRAY_LEN(desired_outputs));
 			for (int i = 0; i < RARRAY_LEN(desired_outputs); i++) {
-				desired_outputs_array[i] = (double)mrb_to_flo(mrb, RARRAY_PTR(desired_outputs)[i]);
+				desired_outputs_array[i] = (double)mrb_as_float(mrb, RARRAY_PTR(desired_outputs)[i]);
 			}
 			double* inputs_array = (double*)malloc(sizeof(double) * RARRAY_LEN(inputs));
 			for (int i = 0; i < RARRAY_LEN(inputs); i++) {
-				inputs_array[i] = (double)mrb_to_flo(mrb, RARRAY_PTR(inputs)[i]);
+				inputs_array[i] = (double)mrb_as_float(mrb, RARRAY_PTR(inputs)[i]);
 			}
 			genann_train(gnn, inputs_array, desired_outputs_array, (double)learning_rate);
 			free(inputs_array);
@@ -156,7 +157,7 @@ static mrb_value mrb_genann_run_multi(mrb_state* mrb, mrb_value self) {
 		} else if (mrb_array_p(inputs)) {
 			double* inputs_array = (double*)malloc(sizeof(double) * RARRAY_LEN(inputs));
 			for (int i = 0; i < RARRAY_LEN(inputs); i++) {
-				inputs_array[i] = (double)mrb_to_flo(mrb, RARRAY_PTR(inputs)[i]);
+				inputs_array[i] = (double)mrb_as_float(mrb, RARRAY_PTR(inputs)[i]);
 			}
 			const double* out = genann_run(gnn, inputs_array);
 			for (int i = 0; i < gnn->outputs; i++) {
@@ -208,7 +209,7 @@ static mrb_value mrb_genann_array_initialize(mrb_state* mrb, mrb_value self) {
 			mrb_value* base = RARRAY_PTR(arg);
 			array = (double*)malloc(sizeof(double) * len);
 			for (unsigned i = 0; i < len; i++) {
-				array[i] = mrb_to_flo(mrb, base[i]);
+				array[i] = mrb_as_float(mrb, base[i]);
 			}
 			mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "__size__"), mrb_fixnum_value((mrb_int)len));
 		} else if (mrb_fixnum_p(arg)) {
@@ -248,7 +249,7 @@ static mrb_value mrb_genann_array_size(mrb_state* mrb, mrb_value self) {
 	return mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "__size__"));
 }
 
-void mrb_lanlv_genann_gem_init(mrb_state* mrb) {
+void mrb_mruby_genann_gem_init(mrb_state* mrb) {
 	struct RClass* genann_class = mrb_define_class(mrb, "Genann", mrb->object_class);
 	
 	MRB_SET_INSTANCE_TT(genann_class, MRB_TT_DATA);
@@ -271,4 +272,4 @@ void mrb_lanlv_genann_gem_init(mrb_state* mrb) {
 	mrb_define_method(mrb, genann_array_class, "length", mrb_genann_array_size, MRB_ARGS_NONE());
 }
 
-void mrb_lanlv_genann_gem_final(mrb_state* mrb) {}
+void mrb_mruby_genann_gem_final(mrb_state* mrb) {}
