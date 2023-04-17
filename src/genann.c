@@ -52,7 +52,7 @@ double genann_act_output_indirect(const struct genann *ann, double a) {
 
 const double sigmoid_dom_min = -15.0;
 const double sigmoid_dom_max = 15.0;
-double int32_terval;
+double interval;
 double lookup[LOOKUP_SIZE];
 
 #ifdef __GNUC__
@@ -67,7 +67,7 @@ double lookup[LOOKUP_SIZE];
 #endif
 
 
-double inline genann_act_sigmoid(const genann *ann unused, double a) {
+double genann_act_sigmoid(const genann *ann unused, double a) {
     if (a < -45.0) return 0;
     if (a > 45.0) return 1;
     return 1.0 / (1 + exp(-a));
@@ -75,51 +75,51 @@ double inline genann_act_sigmoid(const genann *ann unused, double a) {
 
 void genann_init_sigmoid_lookup(const genann *ann) {
         const double f = (sigmoid_dom_max - sigmoid_dom_min) / LOOKUP_SIZE;
-        int32_t i;
+        int i;
 
-        int32_terval = LOOKUP_SIZE / (sigmoid_dom_max - sigmoid_dom_min);
+        interval = LOOKUP_SIZE / (sigmoid_dom_max - sigmoid_dom_min);
         for (i = 0; i < LOOKUP_SIZE; ++i) {
             lookup[i] = genann_act_sigmoid(ann, sigmoid_dom_min + f * i);
         }
 }
 
-double inline genann_act_sigmoid_cached(const genann *ann unused, double a) {
+double genann_act_sigmoid_cached(const genann *ann unused, double a) {
     assert(!isnan(a));
 
     if (a < sigmoid_dom_min) return lookup[0];
     if (a >= sigmoid_dom_max) return lookup[LOOKUP_SIZE - 1];
 
-    size_t j = (size_t)((a-sigmoid_dom_min)*int32_terval+0.5);
+    size_t j = (size_t)((a-sigmoid_dom_min)*interval+0.5);
 
-    /* Because floating point32_t... */
+    /* Because floating point... */
     if (unlikely(j >= LOOKUP_SIZE)) return lookup[LOOKUP_SIZE - 1];
 
     return lookup[j];
 }
 
-double inline genann_act_linear(const struct genann *ann unused, double a) {
+double genann_act_linear(const struct genann *ann unused, double a) {
     return a;
 }
 
-double inline genann_act_threshold(const struct genann *ann unused, double a) {
+double genann_act_threshold(const struct genann *ann unused, double a) {
     return a > 0;
 }
 
-genann *genann_init(int32_t inputs, int32_t hidden_layers, int32_t hidden, int32_t outputs) {
+genann *genann_init(int inputs, int hidden_layers, int hidden, int outputs) {
     if (hidden_layers < 0) return 0;
     if (inputs < 1) return 0;
     if (outputs < 1) return 0;
     if (hidden_layers > 0 && hidden < 1) return 0;
 
 
-    const int32_t hidden_weights = hidden_layers ? (inputs+1) * hidden + (hidden_layers-1) * (hidden+1) * hidden : 0;
-    const int32_t output_weights = (hidden_layers ? (hidden+1) : (inputs+1)) * outputs;
-    const int32_t total_weights = (hidden_weights + output_weights);
+    const int hidden_weights = hidden_layers ? (inputs+1) * hidden + (hidden_layers-1) * (hidden+1) * hidden : 0;
+    const int output_weights = (hidden_layers ? (hidden+1) : (inputs+1)) * outputs;
+    const int total_weights = (hidden_weights + output_weights);
 
-    const int32_t total_neurons = (inputs + hidden * hidden_layers + outputs);
+    const int total_neurons = (inputs + hidden * hidden_layers + outputs);
 
     /* Allocate extra size for weights, outputs, and deltas. */
-    const int32_t size = sizeof(genann) + sizeof(double) * (total_weights + total_neurons + (total_neurons - inputs));
+    const int size = sizeof(genann) + sizeof(double) * (total_weights + total_neurons + (total_neurons - inputs));
     genann *ret = malloc(size);
     if (!ret) return 0;
 
@@ -131,7 +131,7 @@ genann *genann_init(int32_t inputs, int32_t hidden_layers, int32_t hidden, int32
     ret->total_weights = total_weights;
     ret->total_neurons = total_neurons;
 
-    /* Set point32_ters. */
+    /* Set pointers. */
     ret->weight = (double*)((char*)ret + sizeof(genann));
     ret->output = ret->weight + ret->total_weights;
     ret->delta = ret->output + ret->total_neurons;
@@ -146,10 +146,10 @@ genann *genann_init(int32_t inputs, int32_t hidden_layers, int32_t hidden, int32
     return ret;
 }
 
-/*
+
 genann *genann_read(FILE *in) {
-    int32_t inputs, hidden_layers, hidden, outputs;
-    int32_t rc;
+    int inputs, hidden_layers, hidden, outputs;
+    int rc;
 
     errno = 0;
     rc = fscanf(in, "%d %d %d %d", &inputs, &hidden_layers, &hidden, &outputs);
@@ -160,7 +160,7 @@ genann *genann_read(FILE *in) {
 
     genann *ann = genann_init(inputs, hidden_layers, hidden, outputs);
 
-    int32_t i;
+    int i;
     for (i = 0; i < ann->total_weights; ++i) {
         errno = 0;
         rc = fscanf(in, " %le", ann->weight + i);
@@ -174,16 +174,16 @@ genann *genann_read(FILE *in) {
 
     return ann;
 }
-*/
+
 
 genann *genann_copy(genann const *ann) {
-    const int32_t size = sizeof(genann) + sizeof(double) * (ann->total_weights + ann->total_neurons + (ann->total_neurons - ann->inputs));
+    const int size = sizeof(genann) + sizeof(double) * (ann->total_weights + ann->total_neurons + (ann->total_neurons - ann->inputs));
     genann *ret = malloc(size);
     if (!ret) return 0;
 
     memcpy(ret, ann, size);
 
-    /* Set point32_ters. */
+    /* Set pointers. */
     ret->weight = (double*)((char*)ret + sizeof(genann));
     ret->output = ret->weight + ret->total_weights;
     ret->delta = ret->output + ret->total_neurons;
@@ -193,7 +193,7 @@ genann *genann_copy(genann const *ann) {
 
 
 void genann_randomize(genann *ann) {
-    int32_t i;
+    int i;
     for (i = 0; i < ann->total_weights; ++i) {
         double r = GENANN_RANDOM();
         /* Sets weights from -0.5 to 0.5. */
@@ -203,7 +203,7 @@ void genann_randomize(genann *ann) {
 
 
 void genann_free(genann *ann) {
-    /* The weight, output, and delta point32_ters go to the same buffer. */
+    /* The weight, output, and delta pointers go to the same buffer. */
     free(ann);
 }
 
@@ -217,7 +217,7 @@ double const *genann_run(genann const *ann, double const *inputs) {
      * output, for consistency. This way the first layer isn't a special case. */
     memcpy(ann->output, inputs, sizeof(double) * ann->inputs);
 
-    int32_t h, j, k;
+    int h, j, k;
 
     if (!ann->hidden_layers) {
         double *ret = o;
@@ -279,7 +279,7 @@ void genann_train(genann const *ann, double const *inputs, double const *desired
     /* To begin with, we must run the network forward. */
     genann_run(ann, inputs);
 
-    int32_t h, j, k;
+    int h, j, k;
 
     /* First set the output layer deltas. */
     {
@@ -323,7 +323,7 @@ void genann_train(genann const *ann, double const *inputs, double const *desired
 
             for (k = 0; k < (h == ann->hidden_layers-1 ? ann->outputs : ann->hidden); ++k) {
                 const double forward_delta = dd[k];
-                const int32_t windex = k * (ann->hidden + 1) + (j + 1);
+                const int windex = k * (ann->hidden + 1) + (j + 1);
                 const double forward_weight = ww[windex];
                 delta += forward_delta * forward_weight;
             }
@@ -392,14 +392,14 @@ void genann_train(genann const *ann, double const *inputs, double const *desired
 
 }
 
-/*
-void genann_write(genann const *ann, FILE *out) {
-    fprint32_tf(out, "%d %d %d %d", ann->inputs, ann->hidden_layers, ann->hidden, ann->outputs);
 
-    int32_t i;
+void genann_write(genann const *ann, FILE *out) {
+    fprintf(out, "%d %d %d %d", ann->inputs, ann->hidden_layers, ann->hidden, ann->outputs);
+
+    int i;
     for (i = 0; i < ann->total_weights; ++i) {
-        fprint32_tf(out, " %.20e", ann->weight[i]);
+        fprintf(out, " %.20e", ann->weight[i]);
     }
 }
-*/
+
 
